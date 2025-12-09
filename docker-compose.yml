@@ -1,0 +1,14 @@
+version: '3.1'
+services:
+
+  dboracle:
+    image: gvenzl/oracle-xe:slim
+    ports:
+      - "1521:1521"
+    env_file:
+      - .env
+    environment:
+      ORACLE_DATABASE: ${ORACLE_DATABASE}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      APP_USER: ${ORACLE_USER}
+      APP_USER_PASSWORD: ${ORACLE_USER_PASSWORD}

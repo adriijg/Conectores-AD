@@ -1,0 +1,52 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "database",
+            "database": "${workspaceFolder:jdbcadrian}/src/main/resources/es/tierno/database.db"
+        },
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "db_target",
+            "database": "${workspaceFolder:jdbcadrian}/target/classes/es/tierno/database.db"
+        },
+        {
+            "oracleOptions": {
+                "privilege": "Normal",
+                "thickMode": false,
+                "autoCommit": true,
+                "lowerCase": false,
+                "limitPrefetchRows": false
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 1521,
+            "driver": "Oracle",
+            "database": "instituto",
+            "username": "usuario",
+            "password": "usuario",
+            "name": "oracle-db",
+            "connectString": "localhost:1521/XEPDB1"
+        },
+        {
+            "oracleOptions": {
+                "privilege": "Normal",
+                "thickMode": false,
+                "autoCommit": false,
+                "lowerCase": false,
+                "limitPrefetchRows": false
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 1521,
+            "driver": "Oracle",
+            "name": "oracle-db(ADMIN)",
+            "connectString": "localhost:1521/XEPDB1",
+            "username": "SYSTEM",
+            "password": "secret"
+        }
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
+}
