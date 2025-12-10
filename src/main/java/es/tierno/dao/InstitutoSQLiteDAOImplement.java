@@ -1,4 +1,4 @@
-package es.tierno;
+package es.tierno.dao;
 
 import java.io.File;
 import java.net.URL;
@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import es.tierno.modelo.Alumno;
 
 public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
 
@@ -27,6 +29,16 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
     @Override
     public void crearTablaAlumno() throws Exception {
         final String query = "CREATE TABLE ALUMNO(nombre TEXT, apellido TEXT, edad INTEGER, PRIMARY KEY (nombre, apellido))";
+
+        PreparedStatement ps = conn.prepareStatement(query);
+        int r = ps.executeUpdate();
+        System.out.println(r);
+        ps.close();
+    }
+
+    @Override
+    public void crearTablaNotas() throws Exception {
+        final String query = "CREATE TABLE NOTAS(id INTEGER PRIMARY KEY, nombre_alumno TEXT NOT NULL, apellido_alumno TEXT NOT NULL, asignatura TEXT NOT NULL, nota INTEGER, FOREIGN KEY (nombre_alumno, apellido_alumno) REFERENCES ALUMNO(nombre, apellido))";
 
         PreparedStatement ps = conn.prepareStatement(query);
         int r = ps.executeUpdate();

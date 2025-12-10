@@ -1,4 +1,4 @@
-package es.tierno;
+package es.tierno.modelo;
 
 public class Alumno {
 

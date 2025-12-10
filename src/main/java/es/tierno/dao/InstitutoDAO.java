@@ -1,11 +1,14 @@
-package es.tierno;
+package es.tierno.dao;
 
 import java.sql.SQLException;
 import java.util.List;
 
+import es.tierno.modelo.Alumno;
+
 public interface InstitutoDAO {
 
     public void crearTablaAlumno() throws Exception;
+    public void crearTablaNotas() throws Exception;
     public void eliminarTablaAlumno()throws Exception;
     public List<Alumno> listarAlumnos() throws SQLException;
     public List<Alumno> listarAlumnos(int edad) throws SQLException;

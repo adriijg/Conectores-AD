@@ -1,4 +1,6 @@
-package es.tierno;
+package es.tierno.dao;
+
+import es.tierno.Modo;
 
 public class InstitutoDAOFactory {
 
@@ -6,10 +8,10 @@ public class InstitutoDAOFactory {
         InstitutoDAO salida;
         switch (modo) {
             case SQLITE:
-                salida = new InstitutoSQLiteDAOImplement();
+                salida = (InstitutoDAO) new InstitutoSQLiteDAOImplement();
                 break;
             case MOCK:
-                salida = new InstitutoMockDAOImplement();
+                salida = (InstitutoDAO) new InstitutoMockDAOImplement();
                 break;
             default:
                 throw new IllegalArgumentException("Modo no válido");

@@ -1,4 +1,4 @@
-package es.tierno;
+package es.tierno.dao;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import es.tierno.modelo.Alumno;
 
 public class InstitutoOracleXeDaoImp implements InstitutoDAO {
 
@@ -28,6 +30,17 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
         System.out.println(r);
         ps.close();
         System.out.println("Tabla ALUMNO creada correctamente.");
+    }
+
+    @Override
+    public void crearTablaNotas() throws Exception {
+        final String query = "CREATE TABLE NOTAS(id INTEGER PRIMARY KEY, nombre_alumno VARCHAR2(50) NOT NULL, apellido_alumno VARCHAR2(50) NOT NULL, asignatura VARCHAR2(50) NOT NULL, nota INTEGER, FOREIGN KEY (nombre_alumno, apellido_alumno) REFERENCES ALUMNO(nombre, apellido))";
+
+        PreparedStatement ps = conn.prepareStatement(query);
+        int r = ps.executeUpdate();
+        System.out.println(r);
+        ps.close();
+        System.out.println("Tabla NOTAS creada correctamente.");
     }
 
     @Override
@@ -127,14 +140,25 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
 
     @Override
     public int actualizar(Alumno a) throws SQLException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'actualizar'");
+        final String query = "UPDATE Alumno SET Edad = 25 WHERE nombre =  ? AND apellido = ?";
+        PreparedStatement ps = conn.prepareStatement(query);
+
+        ps.setString(1, a.getNombre());
+        ps.setString(2, a.getApellido());
+
+        return ps.executeUpdate();
     }
 
     @Override
     public int borrar(Alumno a) throws SQLException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'borrar'");
+        final String query = "DELETE FROM ALUMNO WHERE nombre = ? AND apellido = ?";
+
+        PreparedStatement ps = conn.prepareStatement(query);
+
+        ps.setString(1, a.getNombre());
+        ps.setString(2, a.getApellido());
+
+        return ps.executeUpdate();
     }
     
 }

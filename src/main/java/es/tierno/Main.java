@@ -1,5 +1,8 @@
 package es.tierno;
 
+import es.tierno.dao.InstitutoOracleXeDaoImp;
+import es.tierno.modelo.Alumno;
+
 public class Main {
     public static void main(String[] args) {
         
@@ -9,7 +12,8 @@ public class Main {
             InstitutoOracleXeDaoImp dao = new InstitutoOracleXeDaoImp();
 
             // Crear tabla
-            // dao.crearTablaAlumno();
+            dao.crearTablaAlumno();
+            dao.crearTablaNotas();
 
             // Eliminar tabla
             // dao.eliminarTablaAlumno();
@@ -39,7 +43,6 @@ public class Main {
             // Borrar alumno
             // dao.borrar(a);
 
-            
         } catch (Exception e) {
             e.printStackTrace();
         }

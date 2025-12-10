@@ -1,12 +1,19 @@
-package es.tierno;
+package es.tierno.dao;
 
 import java.sql.SQLException;
 import java.util.List;
+
+import es.tierno.modelo.Alumno;
 
 public class InstitutoMockDAOImplement implements  InstitutoDAO {
 
     @Override
     public void crearTablaAlumno() throws Exception {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void crearTablaNotas() throws Exception {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
