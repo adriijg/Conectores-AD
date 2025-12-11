@@ -109,7 +109,10 @@ public class Menu {
                     dao.insertarAlumno(a);
                     break;
                 case 3:
-                // Nota n = new Nota();
+                    // Nuevo modelo de tabla, mas sencillo
+                    System.out.println("Asignatura: ");
+                    System.out.println("Nota: ");
+                    System.out.println("ID Alumno: ");
                 case 0:
                     System.out.println("Cerrando programa...");
                     salir = true;
