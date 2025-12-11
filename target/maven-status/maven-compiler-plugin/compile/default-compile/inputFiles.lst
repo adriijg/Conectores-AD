@@ -1,9 +1,14 @@
-C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\App.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\dao\InstitutoDAO.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\dao\InstitutoDAOFactory.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\dao\InstitutoMockDAOImplement.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\dao\InstitutoOracleXeDaoImp.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\dao\InstitutoSQLiteDAOImplement.java
+C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\javafx\App.java
+C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\javafx\MenuOperaciones.java
+C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\javafx\MenuPrincipal.java
+C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\javafx\VentanaCrear.java
+C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\javafx\VentanaInsertarNota.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\Main.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\modelo\Alumno.java
+C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\modelo\Nota.java
 C:\Users\Adrian\Documents\DAM\Curso2526\AccesoADatos\jdbcadrian\src\main\java\es\tierno\Modo.java

@@ -1,7 +1,5 @@
 package es.tierno.dao;
 
-import java.io.File;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,156 +9,166 @@ import java.util.ArrayList;
 import java.util.List;
 
 import es.tierno.modelo.Alumno;
+import es.tierno.modelo.Nota;
 
 public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
 
-    private static final String DB_NAME = "database.db";
-    private static final String JDBC_URL = "jdbc:sqlite:%s";
+    private static final String URL = "jdbc:sqlite:src/data/database.db";
 
     private Connection conn;
 
     public InstitutoSQLiteDAOImplement() throws Exception {
-        URL resource = InstitutoSQLiteDAOImplement.class.getResource(DB_NAME);
-        String path = new File(resource.toURI()).getAbsolutePath();
-        String url = String.format(JDBC_URL, path);
-        this.conn = DriverManager.getConnection(url);
+        this.conn = DriverManager.getConnection(URL);
     }
 
-    @Override
+        @Override
     public void crearTablaAlumno() throws Exception {
-        final String query = "CREATE TABLE ALUMNO(nombre TEXT, apellido TEXT, edad INTEGER, PRIMARY KEY (nombre, apellido))";
-
-        PreparedStatement ps = conn.prepareStatement(query);
-        int r = ps.executeUpdate();
-        System.out.println(r);
-        ps.close();
+        String q = """
+            CREATE TABLE IF NOT EXISTS ALUMNO(
+                id INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                apellido TEXT NOT NULL,
+                edad INTEGER
+            )
+        """;
+        conn.prepareStatement(q).execute();
     }
 
     @Override
     public void crearTablaNotas() throws Exception {
-        final String query = "CREATE TABLE NOTAS(id INTEGER PRIMARY KEY, nombre_alumno TEXT NOT NULL, apellido_alumno TEXT NOT NULL, asignatura TEXT NOT NULL, nota INTEGER, FOREIGN KEY (nombre_alumno, apellido_alumno) REFERENCES ALUMNO(nombre, apellido))";
-
-        PreparedStatement ps = conn.prepareStatement(query);
-        int r = ps.executeUpdate();
-        System.out.println(r);
-        ps.close();
+        String q = """
+            CREATE TABLE IF NOT EXISTS NOTA(
+                id INTEGER PRIMARY KEY,
+                asignatura TEXT NOT NULL,
+                nota INTEGER,
+                alumno_id INTEGER,
+                FOREIGN KEY (alumno_id) REFERENCES ALUMNO(id)
+            )
+        """;
+        conn.prepareStatement(q).execute();
     }
 
     @Override
-    public void eliminarTablaAlumno() throws Exception {
-        final String query = "DROP TABLE ALUMNO";
+    public int insertarAlumno(Alumno a) throws SQLException {
+        String q = "INSERT INTO ALUMNO VALUES (?,?,?,?)";
+        PreparedStatement ps = conn.prepareStatement(q);
+        ps.setInt(1, a.getId());
+        ps.setString(2, a.getNombre());
+        ps.setString(3, a.getApellido());
+        ps.setInt(4, a.getEdad());
+        return ps.executeUpdate();
+    }
 
-        PreparedStatement ps = conn.prepareStatement(query);
-        int result = ps.executeUpdate();
-        System.out.println(result);
-        ps.close();
+    @Override
+    public int insertarNota(Nota n) throws SQLException {
+        String q = "INSERT INTO NOTAS VALUES (?,?,?,?,?)";
+        PreparedStatement ps = conn.prepareStatement(q);
+        ps.setInt(1, n.getId());
+        ps.setString(2, n.getNombreAlumno());
+        ps.setString(3, n.getApellidoAlumno());
+        ps.setString(4, n.getAsignatura());
+        ps.setInt(5, n.getNota());
+        return ps.executeUpdate();
+    }
+
+    @Override
+    public int actualizarAlumno(Alumno a) throws SQLException {
+        String q = "UPDATE ALUMNO SET edad=? WHERE nombre=? AND apellido=?";
+        PreparedStatement ps = conn.prepareStatement(q);
+        ps.setInt(1, a.getEdad());
+        ps.setString(2, a.getNombre());
+        ps.setString(3, a.getApellido());
+        return ps.executeUpdate();
+    }
+
+    @Override
+    public int actualizarNota(Nota n) throws SQLException {
+        String q = "UPDATE NOTAS SET nota=? WHERE id=?";
+        PreparedStatement ps = conn.prepareStatement(q);
+        ps.setInt(1, n.getNota());
+        ps.setInt(2, n.getId());
+        return ps.executeUpdate();
     }
 
     @Override
     public List<Alumno> listarAlumnos() throws SQLException {
-
-        final String query = "SELECT nombre, apellido, edad FROM alumno";
-
-        List<Alumno> alumnos = new ArrayList<>();
-        PreparedStatement ps = conn.prepareStatement(query);
-        ResultSet rs = ps.executeQuery();
-
+        List<Alumno> out = new ArrayList<>();
+        ResultSet rs = conn.prepareStatement("SELECT * FROM ALUMNO").executeQuery();
         while (rs.next()) {
-            String nombre = rs.getString("nombre");
-            String apellido = rs.getString("apellido");
-            int edad = rs.getInt("edad");
-
-            Alumno a = new Alumno(nombre, apellido, edad);
-            alumnos.add(a);
+            out.add(new Alumno(
+                    rs.getString("nombre"),
+                    rs.getString("apellido"),
+                    rs.getInt("edad")
+            ));
         }
-        rs.close();
-        ps.close();
-
-        return alumnos;
+        return out;
     }
 
     @Override
-    public List<Alumno> listarAlumnos(int edad) throws SQLException {
-        final String query = "SELECT nombre, apellido, edad FROM alumno WHERE edad >= ?";
+    public List<Nota> listarNotas() throws SQLException {
+        List<Nota> out = new ArrayList<>();
+        ResultSet rs = conn.prepareStatement("SELECT * FROM NOTAS").executeQuery();
+        while (rs.next()) {
+            out.add(new Nota(
+                    rs.getInt("id"),
+                    rs.getString("nombre_alumno"),
+                    rs.getString("apellido_alumno"),
+                    rs.getString("asignatura"),
+                    rs.getInt("nota")
+            ));
+        }
+        return out;
+    }
 
-        
-        List<Alumno> alumnos = new ArrayList<>();
-        PreparedStatement ps = conn.prepareStatement(query);
+    @Override
+    public List<String> listarAlumnosConNotas() throws SQLException {
+        List<String> out = new ArrayList<>();
+        String q = """
+        SELECT a.nombre,a.apellido,a.edad,n.asignatura,n.nota
+        FROM ALUMNO a LEFT JOIN NOTAS n
+        ON a.nombre=n.nombre_alumno AND a.apellido=n.apellido_alumno
+        """;
+        ResultSet rs = conn.prepareStatement(q).executeQuery();
+        while (rs.next()) {
+            out.add(
+                    rs.getString("nombre") + " " +
+                    rs.getString("apellido") + " | " +
+                    rs.getString("asignatura") + " = " +
+                    rs.getInt("nota")
+            );
+        }
+        return out;
+    }
 
+    @Override
+    public int borrarAlumno(Alumno a) throws SQLException {
+        String q = "DELETE FROM ALUMNO WHERE nombre=? AND apellido=?";
+        PreparedStatement ps = conn.prepareStatement(q);
+        ps.setString(1, a.getNombre());
+        ps.setString(2, a.getApellido());
+        return ps.executeUpdate();
+    }
+
+    @Override
+    public int borrarNota(Nota n) throws SQLException {
+        String q = "DELETE FROM NOTAS WHERE id=?";
+        PreparedStatement ps = conn.prepareStatement(q);
+        ps.setInt(1, n.getId());
+        return ps.executeUpdate();
+    }
+
+    @Override
+    public void consultarAlumno(int edad) throws SQLException {
+        PreparedStatement ps = conn.prepareStatement(
+                "SELECT * FROM ALUMNO WHERE edad=?"
+        );
         ps.setInt(1, edad);
-        
         ResultSet rs = ps.executeQuery();
-
         while (rs.next()) {
-            
-            String nombre = rs.getString("nombre");
-            String apellido = rs.getString("apellido");
-            int e = rs.getInt("edad");
-
-            Alumno a = new Alumno(nombre, apellido, e);
-            alumnos.add(a);
+            System.out.println(
+                    rs.getString("nombre") + " " +
+                    rs.getString("apellido")
+            );
         }
-        rs.close();
-        ps.close();
-
-        return alumnos;
     }
-
-    @Override
-    public int insertar(Alumno a) throws SQLException {
-        final String query = "INSERT INTO Alumno (nombre, apellido, edad) VALUES (?,?,?)";
-
-        PreparedStatement ps = conn.prepareStatement(query);
-
-        ps.setString(1, a.getNombre());
-        ps.setString(2, a.getApellido());
-        ps.setInt(3, a.getEdad());
-        ps.executeUpdate();
-
-        ps.close();
-
-        return 1;
-    }
-
-    @Override
-    public int insertar(List<Alumno> alumnos) throws SQLException {
-        final String query = "INSERT INTO Alumno (nombre, apellido, edad) VALUES (?,?,?)";
-        PreparedStatement ps = conn.prepareStatement(query);
-        int alumnInserts = 0;
-
-        for (Alumno a : alumnos) {
-            ps.setString(1, a.getNombre());
-            ps.setString(2, a.getApellido());
-            ps.setInt(3, a.getEdad());
-            alumnInserts = ps.executeUpdate();
-        }
-
-        ps.close();
-
-        return alumnInserts;
-    }
-
-    @Override
-    public int actualizar(Alumno a) throws SQLException {
-        final String query = "UPDATE Alumno SET Edad = 25 WHERE nombre =  ? AND apellido = ?";
-        PreparedStatement ps = conn.prepareStatement(query);
-
-        ps.setString(1, a.getNombre());
-        ps.setString(2, a.getApellido());
-
-        return ps.executeUpdate();
-    }
-
-    @Override
-    public int borrar(Alumno a) throws SQLException {
-        final String query = "DELETE FROM ALUMNO WHERE nombre = ? AND apellido = ?";
-
-        PreparedStatement ps = conn.prepareStatement(query);
-
-        ps.setString(1, a.getNombre());
-        ps.setString(2, a.getApellido());
-
-        return ps.executeUpdate();
-    }
-
 }
