@@ -61,13 +61,12 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
 
     @Override
     public int insertarNota(Nota n) throws SQLException {
-        String q = "INSERT INTO NOTAS VALUES (?,?,?,?,?)";
+        String q = "INSERT INTO NOTA VALUES (?,?,?,?)";
         PreparedStatement ps = conn.prepareStatement(q);
         ps.setInt(1, n.getId());
-        ps.setString(2, n.getNombreAlumno());
-        ps.setString(3, n.getApellidoAlumno());
-        ps.setString(4, n.getAsignatura());
-        ps.setInt(5, n.getNota());
+        ps.setString(2, n.getAsignatura());
+        ps.setInt(3, n.getNota());
+        ps.setInt(4, n.getAlumnoId());
         return ps.executeUpdate();
     }
 
@@ -96,6 +95,7 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
         ResultSet rs = conn.prepareStatement("SELECT * FROM ALUMNO").executeQuery();
         while (rs.next()) {
             out.add(new Alumno(
+                    rs.getInt("id"),
                     rs.getString("nombre"),
                     rs.getString("apellido"),
                     rs.getInt("edad")
@@ -111,10 +111,9 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
         while (rs.next()) {
             out.add(new Nota(
                     rs.getInt("id"),
-                    rs.getString("nombre_alumno"),
-                    rs.getString("apellido_alumno"),
                     rs.getString("asignatura"),
-                    rs.getInt("nota")
+                    rs.getInt("nota"),
+                    rs.getInt("alumno_id")
             ));
         }
         return out;
