@@ -20,32 +20,53 @@ public class Menu {
 
     // ==========================================================
     // MAIN
-    public static void main(String[] args) throws SQLException {
-        Menu menu = new Menu();
-        try {
-            InstitutoDAO dao = menu.menuPrincipal();
-            menu.menuSecundario(dao, getConnection());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    // public static void main(String[] args) throws SQLException {
+    //     Menu menu = new Menu();
+    //     try {
+    //         InstitutoDAO dao = menu.menuPrincipal();
+    //         menu.menuSecundario(dao, getConnection());
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //     }
+    // }
+    // ==========================================================
+    // INICIAR MENÚ
+    public void iniciar() throws Exception {
+        Modo modo = menuPrincipal();
+        InstitutoDAO dao = InstitutoDAOFactory.obtenerDAO(modo);
+        menuSecundario(dao, getConnection(modo));
     }
 
     // ==========================================================
     // CONEXIÓN
-    private static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:sqlite:src/data/database.db");
+    public static Connection getConnection(Modo modo) throws SQLException {
+        switch (modo) {
+            case SQLITE:
+                return DriverManager.getConnection("jdbc:sqlite:src/data/database.db");
+            case ORACLE:
+                String url = "jdbc:oracle:thin:@localhost:1521/XEPDB1";
+                String user = "usuario";
+                String password = "usuario";
+                return DriverManager.getConnection(url, user, password);
+            case MOCK:
+                return null;
+            default:
+                throw new IllegalArgumentException("Modo no soportado");
+        }
     }
 
     // ==========================================================
     // MENÚ PRINCIPAL
-    private InstitutoDAO menuPrincipal() throws Exception {
+    private Modo menuPrincipal() throws Exception {
         String input = JOptionPane.showInputDialog(null, mostrarOpciones(TipoMenu.PRINCIPAL), "Menú Principal", JOptionPane.QUESTION_MESSAGE);
+
         if (input == null) {
             System.exit(0);
         }
-        int opcion = Integer.parseInt(input.trim());
 
+        int opcion = Integer.parseInt(input.trim());
         Modo modo;
+
         switch (opcion) {
             case 1 ->
                 modo = Modo.MOCK;
@@ -57,17 +78,21 @@ public class Menu {
                 throw new AssertionError();
         }
 
-        return InstitutoDAOFactory.obtenerDAO(modo);
+        return modo;
     }
 
     // ==========================================================
     // MENÚ SECUNDARIO
     private void menuSecundario(InstitutoDAO dao, Connection conn) throws Exception {
+        if (conn != null) {
+            conn = null;
+        }
+        
         boolean salir = false;
 
         while (!salir) {
             String input = JOptionPane.showInputDialog(null, mostrarOpciones(TipoMenu.SECUNDARIO), "Menú Secundario", JOptionPane.QUESTION_MESSAGE);
-            if (input == null) { // Si cierra la ventana
+            if (input == null) {
                 salir = true;
                 break;
             }
@@ -144,20 +169,14 @@ public class Menu {
     // ==========================================================
     // INSERTAR ALUMNO
     private void insertarAlumno(InstitutoDAO dao, Connection conn) throws SQLException {
-        String nombre = JOptionPane.showInputDialog("Nombre:");
-        if (nombre == null) {
-            return;
-        }
+        String nombre = pedirTexto("Nombre:");
+        if (nombre == null) return;
 
-        String apellido = JOptionPane.showInputDialog("Apellido:");
-        if (apellido == null) {
-            return;
-        }
+        String apellido = pedirTexto("Apellido:");
+        if (apellido == null) return;
 
-        String edadStr = JOptionPane.showInputDialog("Edad:");
-        if (edadStr == null) {
-            return;
-        }
+        String edadStr = pedirTexto("Edad:");
+        if (edadStr == null) return;
         int edad = Integer.parseInt(edadStr.trim());
 
         int id = getMaxTableID(conn, Tablas.ALUMNO) + 1;
@@ -170,25 +189,19 @@ public class Menu {
     // ==========================================================
     // INSERTAR NOTA
     private void insertarNota(InstitutoDAO dao, Connection conn) throws SQLException {
-        String asig = JOptionPane.showInputDialog("Asignatura:");
-        if (asig == null) {
-            return;
-        }
+        String asig = pedirTexto("Asignatura:");
+        if (asig == null) return;
+        String notaStr = pedirTexto("Nota (0-10):");
+        if (notaStr == null) return;
 
-        String notaStr = JOptionPane.showInputDialog("Nota (0-10):");
-        if (notaStr == null) {
-            return;
-        }
         int nota = Integer.parseInt(notaStr.trim());
         if (!notaValida(nota)) {
             JOptionPane.showMessageDialog(null, "La nota debe estar entre 0 y 10.");
             return;
         }
 
-        String alumnoIdStr = JOptionPane.showInputDialog("ID Alumno:");
-        if (alumnoIdStr == null) {
-            return;
-        }
+        String alumnoIdStr = pedirTexto("ID Alumno:");
+        if (alumnoIdStr == null) return;
         int alumnoId = Integer.parseInt(alumnoIdStr.trim());
 
         if (!existAlumno(conn, alumnoId)) {
@@ -394,7 +407,7 @@ public class Menu {
             List<Alumno> alumnos = dao.consultarAlumno(edad);
 
             if (alumnos.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "No hay alumnos con " + edad + " años.", "Resultado", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "No hay alumnos con " + edad + " años o menores.", "Resultado", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 StringBuilder sb = new StringBuilder();
                 for (Alumno a : alumnos) {
@@ -413,14 +426,12 @@ public class Menu {
     // BORRAR ALUMNO
     private void borrarAlumno(InstitutoDAO dao) {
         try {
-            // Obtenemos la lista de alumnos
             List<Alumno> alumnos = dao.listarAlumnos();
             if (alumnos.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "No hay alumnos para borrar.", "Información", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
 
-            // Construimos un String con todos los alumnos
             StringBuilder sb = new StringBuilder();
             for (Alumno a : alumnos) {
                 sb.append("ID: ").append(a.getId())
@@ -432,9 +443,10 @@ public class Menu {
 
             String input = JOptionPane.showInputDialog(null, sb.toString() + "\nIntroduce el ID del alumno a borrar:", "Borrar Alumno", JOptionPane.QUESTION_MESSAGE);
             if (input == null) {
-                return; // Cancelar
+                return;
 
-                        }int id;
+            }
+            int id;
             try {
                 id = Integer.parseInt(input);
             } catch (NumberFormatException e) {
@@ -442,7 +454,6 @@ public class Menu {
                 return;
             }
 
-            // Buscamos el alumno por ID
             Alumno alumnoABorrar = null;
             for (Alumno a : alumnos) {
                 if (a.getId() == id) {
@@ -456,7 +467,6 @@ public class Menu {
                 return;
             }
 
-            // Llamamos al DAO para borrar
             dao.borrarAlumno(alumnoABorrar);
             JOptionPane.showMessageDialog(null, "Alumno borrado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
@@ -470,7 +480,6 @@ public class Menu {
     // BORRAR NOTA
     private void borrarNota(InstitutoDAO dao) {
         try {
-            // Primero pedimos el ID del alumno
             List<Alumno> alumnos = dao.listarAlumnos();
             if (alumnos.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "No hay alumnos para seleccionar.", "Información", JOptionPane.INFORMATION_MESSAGE);
@@ -512,8 +521,7 @@ public class Menu {
                 return;
             }
 
-            // Ahora obtenemos las notas de ese alumno
-            List<Nota> notas = dao.listarNotas(); // Suponemos que listarNotas devuelve todas las notas
+            List<Nota> notas = dao.listarNotas();
             List<Nota> notasAlumno = new ArrayList<>();
             for (Nota n : notas) {
                 if (n.getAlumnoId() == alumnoId) {
@@ -526,7 +534,6 @@ public class Menu {
                 return;
             }
 
-            // Mostramos las notas del alumno
             StringBuilder sbNotas = new StringBuilder();
             for (Nota n : notasAlumno) {
                 sbNotas.append("ID Nota: ").append(n.getId())
@@ -561,7 +568,6 @@ public class Menu {
                 return;
             }
 
-            // Borramos la nota
             dao.borrarNota(notaABorrar);
             JOptionPane.showMessageDialog(null, "Nota borrada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
@@ -600,6 +606,30 @@ public class Menu {
     private boolean notaValida(int nota) {
         return nota >= 0 && nota <= 10;
     }
+
+    private String pedirTexto(String mensaje) {
+        String input = JOptionPane.showInputDialog(mensaje);
+        if (input != null) {
+            input = input.trim();
+            if (input.isEmpty()) {
+                return null;
+            }
+        }
+        return input;
+    }
+
+    // private Integer pedirEntero(String mensaje) {
+    //     String input = pedirTexto(mensaje);
+    //     if (input == null) {
+    //         return null;
+    //     }
+    //     try {
+    //         return Integer.parseInt(input);
+    //     } catch (NumberFormatException e) {
+    //         JOptionPane.showMessageDialog(null, "Número inválido.");
+    //         return null;
+    //     }
+    // }
 
     // ==========================================================
     private enum TipoMenu {
