@@ -24,5 +24,5 @@ public interface InstitutoDAO {
     public int borrarAlumno(Alumno a) throws SQLException;
     public int borrarNota(Nota n) throws SQLException;
 
-    public void consultarAlumno(int edad) throws SQLException;
+    public List<Alumno> consultarAlumno(int edad) throws SQLException;
 }

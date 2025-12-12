@@ -52,9 +52,7 @@ public class Alumno {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("A -> ");
-        sb.append("ID: ").append(id);
-        sb.append(", Nombre: ").append(nombre);
+        sb.append("Nombre: ").append(nombre);
         sb.append(", Apellido: ").append(apellido);
         sb.append(", Edad: ").append(edad);
         sb.append(';');

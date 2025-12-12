@@ -21,7 +21,7 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
         this.conn = DriverManager.getConnection(URL);
     }
 
-        @Override
+    @Override
     public void crearTablaAlumno() throws Exception {
         String q = """
             CREATE TABLE IF NOT EXISTS ALUMNO(
@@ -72,17 +72,18 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
 
     @Override
     public int actualizarAlumno(Alumno a) throws SQLException {
-        String q = "UPDATE ALUMNO SET edad=? WHERE nombre=? AND apellido=?";
+        String q = "UPDATE ALUMNO SET nombre=?, apellido=?, edad=? WHERE id=?";
         PreparedStatement ps = conn.prepareStatement(q);
-        ps.setInt(1, a.getEdad());
-        ps.setString(2, a.getNombre());
-        ps.setString(3, a.getApellido());
+        ps.setString(1, a.getNombre());
+        ps.setString(2, a.getApellido());
+        ps.setInt(3, a.getEdad());
+        ps.setInt(4, a.getId());
         return ps.executeUpdate();
     }
 
     @Override
     public int actualizarNota(Nota n) throws SQLException {
-        String q = "UPDATE NOTAS SET nota=? WHERE id=?";
+        String q = "UPDATE NOTA SET nota=? WHERE id=?";
         PreparedStatement ps = conn.prepareStatement(q);
         ps.setInt(1, n.getNota());
         ps.setInt(2, n.getId());
@@ -106,34 +107,37 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
 
     @Override
     public List<Nota> listarNotas() throws SQLException {
-        List<Nota> out = new ArrayList<>();
-        ResultSet rs = conn.prepareStatement("SELECT * FROM NOTAS").executeQuery();
-        while (rs.next()) {
-            out.add(new Nota(
-                    rs.getInt("id"),
-                    rs.getString("asignatura"),
-                    rs.getInt("nota"),
-                    rs.getInt("alumno_id")
-            ));
+        List<Nota> notas = new ArrayList<>();
+        String q = "SELECT * FROM NOTA";
+        try (ResultSet rs = conn.prepareStatement(q).executeQuery()) {
+            while (rs.next()) {
+                notas.add(new Nota(
+                        rs.getInt("id"),
+                        rs.getString("asignatura"),
+                        rs.getInt("nota"),
+                        rs.getInt("alumno_id")
+                ));
+            }
         }
-        return out;
+        return notas;
     }
 
     @Override
     public List<String> listarAlumnosConNotas() throws SQLException {
         List<String> out = new ArrayList<>();
         String q = """
-        SELECT a.nombre,a.apellido,a.edad,n.asignatura,n.nota
-        FROM ALUMNO a LEFT JOIN NOTAS n
-        ON a.nombre=n.nombre_alumno AND a.apellido=n.apellido_alumno
+        SELECT a.nombre, a.apellido, a.edad, n.asignatura, n.nota
+        FROM ALUMNO a
+        LEFT JOIN NOTA n
+        ON a.id = n.alumno_id;
         """;
         ResultSet rs = conn.prepareStatement(q).executeQuery();
         while (rs.next()) {
             out.add(
-                    rs.getString("nombre") + " " +
-                    rs.getString("apellido") + " | " +
-                    rs.getString("asignatura") + " = " +
-                    rs.getInt("nota")
+                    rs.getString("nombre") + " "
+                    + rs.getString("apellido") + " | "
+                    + rs.getString("asignatura") + " = "
+                    + rs.getInt("nota")
             );
         }
         return out;
@@ -150,24 +154,30 @@ public class InstitutoSQLiteDAOImplement implements InstitutoDAO {
 
     @Override
     public int borrarNota(Nota n) throws SQLException {
-        String q = "DELETE FROM NOTAS WHERE id=?";
+        String q = "DELETE FROM NOTA WHERE id=?";
         PreparedStatement ps = conn.prepareStatement(q);
         ps.setInt(1, n.getId());
         return ps.executeUpdate();
     }
 
     @Override
-    public void consultarAlumno(int edad) throws SQLException {
-        PreparedStatement ps = conn.prepareStatement(
-                "SELECT * FROM ALUMNO WHERE edad=?"
-        );
-        ps.setInt(1, edad);
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            System.out.println(
-                    rs.getString("nombre") + " " +
-                    rs.getString("apellido")
-            );
+    public List<Alumno> consultarAlumno(int edad) throws SQLException {
+        List<Alumno> alumnos = new ArrayList<>();
+        String query = "SELECT * FROM ALUMNO WHERE edad >= ?";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, edad);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    alumnos.add(new Alumno(
+                            rs.getInt("id"),
+                            rs.getString("nombre"),
+                            rs.getString("apellido"),
+                            rs.getInt("edad")
+                    ));
+                }
+            }
         }
+        return alumnos;
     }
+
 }

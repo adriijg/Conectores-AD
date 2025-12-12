@@ -41,7 +41,7 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
         int r = ps.executeUpdate();
         System.out.println(r);
         ps.close();
-        System.out.println("Tabla NOTAS creada correctamente.");
+        System.out.println("Tabla NOTA creada correctamente.");
     }
 
     @Override
@@ -58,7 +58,7 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
 
     @Override
     public int insertarNota(Nota n) throws SQLException {
-        String query = "INSERT INTO NOTAS (id, nombre_alumno, apellido_alumno, asignatura, nota) VALUES (?, ?, ?, ?, ?)";
+        String query = "INSERT INTO NOTA (id, nombre_alumno, apellido_alumno, asignatura, nota) VALUES (?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(query);
         ps.setInt(1, n.getId());
         ps.setString(2, n.getNombreAlumno());
@@ -84,7 +84,7 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
 
     @Override
     public int actualizarNota(Nota n) throws SQLException {
-        String query = "UPDATE NOTAS SET nota = ? WHERE id = ?";
+        String query = "UPDATE NOTA SET nota = ? WHERE id = ?";
         PreparedStatement ps = conn.prepareStatement(query);
         ps.setInt(1, n.getNota());
         ps.setInt(2, n.getId());
@@ -108,31 +108,6 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
         rs.close();
         ps.close();
         return alumnos;
-    }
-
-    @Override
-    public List<Nota> listarNotas() throws SQLException {
-        List<Nota> lista = new ArrayList<>();
-
-        String sql = "SELECT id, nombre_alumno, apellido_alumno, asignatura, nota FROM NOTAS";
-
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-            lista.add(new Nota(
-                    rs.getInt("id"),
-                    rs.getString("nombre_alumno"),
-                    rs.getString("apellido_alumno"),
-                    rs.getString("asignatura"),
-                    rs.getInt("nota")
-            ));
-        }
-
-        rs.close();
-        ps.close();
-
-        return lista;
     }
 
     @Override
@@ -172,7 +147,7 @@ public class InstitutoOracleXeDaoImp implements InstitutoDAO {
 
     @Override
     public int borrarNota(Nota n) throws SQLException {
-        String query = "DELETE FROM NOTAS WHERE id = ?";
+        String query = "DELETE FROM NOTA WHERE id = ?";
         PreparedStatement ps = conn.prepareStatement(query);
         ps.setInt(1, n.getId());
         int r = ps.executeUpdate();

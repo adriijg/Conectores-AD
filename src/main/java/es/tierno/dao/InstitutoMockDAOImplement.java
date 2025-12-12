@@ -43,22 +43,20 @@ public class InstitutoMockDAOImplement implements InstitutoDAO {
     }
 
     @Override
-    public List<Nota> listarNotas() {
-        return notas;
-    }
-
-    @Override
     public List<String> listarAlumnosConNotas() {
-        List<String> salida = new ArrayList<>();
+        List<String> out = new ArrayList<>();
         for (Alumno a : alumnos) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(a.toString());
+            sb.append(" Notas: ");
             for (Nota n : notas) {
-                if (n.getNombreAlumno().equals(a.getNombre())
-                        && n.getApellidoAlumno().equals(a.getApellido())) {
-                    salida.add(a + " | " + n);
+                if (n.getAlumnoId() == a.getId()) {
+                    sb.append(n.toString());
                 }
             }
+            out.add(sb.toString());
         }
-        return salida;
+        return out;
     }
 
     @Override
