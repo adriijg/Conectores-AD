@@ -13,22 +13,12 @@ import javax.swing.JOptionPane;
 import es.tierno.Modo;
 import es.tierno.dao.InstitutoDAO;
 import es.tierno.dao.InstitutoDAOFactory;
+import es.tierno.dao.InstitutoMockDAOImplement;
 import es.tierno.modelo.Alumno;
 import es.tierno.modelo.Nota;
 
 public class Menu {
-
-    // ==========================================================
-    // MAIN
-    // public static void main(String[] args) throws SQLException {
-    //     Menu menu = new Menu();
-    //     try {
-    //         InstitutoDAO dao = menu.menuPrincipal();
-    //         menu.menuSecundario(dao, getConnection());
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    
     // ==========================================================
     // INICIAR MENÚ
     public void iniciar() throws Exception {
@@ -87,7 +77,7 @@ public class Menu {
         if (conn != null) {
             conn = null;
         }
-        
+
         boolean salir = false;
 
         while (!salir) {
@@ -170,19 +160,25 @@ public class Menu {
     // INSERTAR ALUMNO
     private void insertarAlumno(InstitutoDAO dao, Connection conn) throws SQLException {
         String nombre = pedirTexto("Nombre:");
-        if (nombre == null) return;
+        if (nombre == null) {
+            return;
+        }
 
         String apellido = pedirTexto("Apellido:");
-        if (apellido == null) return;
+        if (apellido == null) {
+            return;
+        }
 
         String edadStr = pedirTexto("Edad:");
-        if (edadStr == null) return;
+        if (edadStr == null) {
+            return;
+        }
         int edad = Integer.parseInt(edadStr.trim());
 
-        int id = getMaxTableID(conn, Tablas.ALUMNO) + 1;
+        int id = (conn == null) ? getNextId(conn, Tablas.ALUMNO, dao) : 0; // DB asigna ID
         Alumno a = new Alumno(id, nombre, apellido, edad);
-        dao.insertarAlumno(a);
 
+        dao.insertarAlumno(a);
         JOptionPane.showMessageDialog(null, "Alumno insertado correctamente.");
     }
 
@@ -190,10 +186,14 @@ public class Menu {
     // INSERTAR NOTA
     private void insertarNota(InstitutoDAO dao, Connection conn) throws SQLException {
         String asig = pedirTexto("Asignatura:");
-        if (asig == null) return;
-        String notaStr = pedirTexto("Nota (0-10):");
-        if (notaStr == null) return;
+        if (asig == null) {
+            return;
+        }
 
+        String notaStr = pedirTexto("Nota (0-10):");
+        if (notaStr == null) {
+            return;
+        }
         int nota = Integer.parseInt(notaStr.trim());
         if (!notaValida(nota)) {
             JOptionPane.showMessageDialog(null, "La nota debe estar entre 0 y 10.");
@@ -201,15 +201,19 @@ public class Menu {
         }
 
         String alumnoIdStr = pedirTexto("ID Alumno:");
-        if (alumnoIdStr == null) return;
+        if (alumnoIdStr == null) {
+            return;
+        }
         int alumnoId = Integer.parseInt(alumnoIdStr.trim());
 
-        if (!existAlumno(conn, alumnoId)) {
+        if (conn != null && !existAlumno(conn, alumnoId, dao)) {
             JOptionPane.showMessageDialog(null, "El alumno con ID " + alumnoId + " no existe.");
             return;
         }
 
-        Nota n = new Nota(getMaxTableID(conn, Tablas.NOTA) + 1, asig, nota, alumnoId);
+        int id = (conn == null) ? getNextId(conn, Tablas.NOTA, dao) : 0; // DB asigna ID
+        Nota n = new Nota(id, asig, nota, alumnoId);
+
         dao.insertarNota(n);
         JOptionPane.showMessageDialog(null, "Nota insertada correctamente.");
     }
@@ -237,19 +241,35 @@ public class Menu {
     // ==========================================================
     // ACTUALIZAR ALUMNO
     private void actualizarAlumno(InstitutoDAO dao, Connection conn) throws SQLException {
-        // 1. Listar alumnos
-        StringBuilder sb = new StringBuilder();
-        sb.append("ALUMNOS:\n");
-        ResultSet rs = conn.prepareStatement("SELECT * FROM ALUMNO").executeQuery();
-        while (rs.next()) {
-            sb.append(rs.getInt("id")).append(": ")
-                    .append(rs.getString("nombre")).append(" ")
-                    .append(rs.getString("apellido")).append(" | Edad: ")
-                    .append(rs.getInt("edad")).append("\n");
-        }
-        rs.close();
+        List<Alumno> alumnos;
 
-        // 2. Pedir ID del alumno a editar
+        // Obtener alumnos según modo
+        if (conn == null) { // MOCK
+            alumnos = dao.listarAlumnos();
+        } else { // BD real
+            alumnos = new ArrayList<>();
+            ResultSet rs = conn.prepareStatement("SELECT * FROM ALUMNO").executeQuery();
+            while (rs.next()) {
+                alumnos.add(new Alumno(rs.getInt("id"), rs.getString("nombre"), rs.getString("apellido"), rs.getInt("edad")));
+            }
+            rs.close();
+        }
+
+        if (alumnos.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay alumnos para actualizar.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Mostrar alumnos
+        StringBuilder sb = new StringBuilder("ALUMNOS:\n");
+        for (Alumno a : alumnos) {
+            sb.append(a.getId()).append(": ")
+                    .append(a.getNombre()).append(" ")
+                    .append(a.getApellido()).append(" | Edad: ")
+                    .append(a.getEdad()).append("\n");
+        }
+
+        // Pedir ID del alumno a actualizar
         String idStr = JOptionPane.showInputDialog(null, sb.toString() + "\nIntroduce el ID del alumno a actualizar:");
         if (idStr == null) {
             return;
@@ -263,13 +283,17 @@ public class Menu {
             return;
         }
 
-        // 3. Comprobar si existe el alumno
-        if (!existAlumno(conn, id)) {
+        // Comprobar si existe
+        boolean existe = conn == null
+                ? alumnos.stream().anyMatch(a -> a.getId() == id)
+                : existAlumno(conn, id, dao);
+
+        if (!existe) {
             JOptionPane.showMessageDialog(null, "El alumno con ID " + id + " no existe.");
             return;
         }
 
-        // 4. Pedir nuevos datos
+        // Pedir nuevos datos
         String nombre = JOptionPane.showInputDialog(null, "Nuevo nombre:");
         if (nombre == null) {
             return;
@@ -291,7 +315,7 @@ public class Menu {
             return;
         }
 
-        // 5. Crear objeto Alumno manteniendo el mismo ID y actualizarlo
+        // Actualizar alumno
         Alumno a = new Alumno(id, nombre, apellido, edad);
         int filas = dao.actualizarAlumno(a);
 
@@ -301,21 +325,49 @@ public class Menu {
     // ==========================================================
     // ACTUALIZAR NOTA
     private void actualizarNota(InstitutoDAO dao, Connection conn) throws SQLException {
-        // 1. Listar alumnos
-        StringBuilder sb = new StringBuilder();
-        sb.append("ALUMNOS:\n");
-        ResultSet rsAlumnos = conn.prepareStatement("SELECT * FROM ALUMNO").executeQuery();
-        while (rsAlumnos.next()) {
-            sb.append(rsAlumnos.getInt("id")).append(": ")
-                    .append(rsAlumnos.getString("nombre")).append(" ")
-                    .append(rsAlumnos.getString("apellido")).append("\n");
-        }
-        rsAlumnos.close();
+        List<Alumno> alumnos;
+        List<Nota> notas;
 
-        String idAlumnoStr = JOptionPane.showInputDialog(null, sb.toString() + "\nIntroduce el ID del alumno cuya nota quieres actualizar:");
+        // Obtener datos según modo
+        if (conn == null) { // MOCK
+            alumnos = dao.listarAlumnos();
+            notas = ((InstitutoMockDAOImplement) dao).listarNotas();
+        } else { // BD real
+            alumnos = new ArrayList<>();
+            ResultSet rsAlumnos = conn.prepareStatement("SELECT * FROM ALUMNO").executeQuery();
+            while (rsAlumnos.next()) {
+                alumnos.add(new Alumno(rsAlumnos.getInt("id"), rsAlumnos.getString("nombre"), rsAlumnos.getString("apellido"), rsAlumnos.getInt("edad")));
+            }
+            rsAlumnos.close();
+
+            notas = new ArrayList<>();
+            PreparedStatement psNotas = conn.prepareStatement("SELECT * FROM NOTA");
+            ResultSet rsNotas = psNotas.executeQuery();
+            while (rsNotas.next()) {
+                notas.add(new Nota(rsNotas.getInt("id"), rsNotas.getString("asignatura"), rsNotas.getInt("nota"), rsNotas.getInt("alumno_id")));
+            }
+            rsNotas.close();
+            psNotas.close();
+        }
+
+        if (alumnos.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay alumnos registrados.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Mostrar alumnos
+        StringBuilder sbAlumnos = new StringBuilder("ALUMNOS:\n");
+        for (Alumno a : alumnos) {
+            sbAlumnos.append(a.getId()).append(": ")
+                    .append(a.getNombre()).append(" ")
+                    .append(a.getApellido()).append("\n");
+        }
+
+        String idAlumnoStr = JOptionPane.showInputDialog(null, sbAlumnos.toString() + "\nIntroduce el ID del alumno cuya nota quieres actualizar:");
         if (idAlumnoStr == null) {
             return;
         }
+
         int idAlumno;
         try {
             idAlumno = Integer.parseInt(idAlumnoStr);
@@ -324,37 +376,38 @@ public class Menu {
             return;
         }
 
-        if (!existAlumno(conn, idAlumno)) {
+        boolean alumnoExiste = alumnos.stream().anyMatch(a -> a.getId() == idAlumno);
+        if (!alumnoExiste) {
             JOptionPane.showMessageDialog(null, "El alumno con ID " + idAlumno + " no existe.");
             return;
         }
 
-        // 2. Listar notas del alumno
-        StringBuilder sbNotas = new StringBuilder();
-        sbNotas.append("NOTAS DEL ALUMNO:\n");
-        PreparedStatement psNotas = conn.prepareStatement("SELECT * FROM NOTA WHERE alumno_id = ?");
-        psNotas.setInt(1, idAlumno);
-        ResultSet rsNotas = psNotas.executeQuery();
-
-        boolean tieneNotas = false;
-        while (rsNotas.next()) {
-            tieneNotas = true;
-            sbNotas.append(rsNotas.getInt("id")).append(": ")
-                    .append(rsNotas.getString("asignatura")).append(" = ")
-                    .append(rsNotas.getInt("nota")).append("\n");
+        // Filtrar notas del alumno
+        List<Nota> notasAlumno = new ArrayList<>();
+        for (Nota n : notas) {
+            if (n.getAlumnoId() == idAlumno) {
+                notasAlumno.add(n);
+            }
         }
-        rsNotas.close();
-        psNotas.close();
 
-        if (!tieneNotas) {
+        if (notasAlumno.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Este alumno no tiene notas registradas.");
             return;
+        }
+
+        // Mostrar notas
+        StringBuilder sbNotas = new StringBuilder("NOTAS DEL ALUMNO:\n");
+        for (Nota n : notasAlumno) {
+            sbNotas.append(n.getId()).append(": ")
+                    .append(n.getAsignatura()).append(" = ")
+                    .append(n.getNota()).append("\n");
         }
 
         String idNotaStr = JOptionPane.showInputDialog(null, sbNotas.toString() + "\nIntroduce el ID de la nota a actualizar:");
         if (idNotaStr == null) {
             return;
         }
+
         int idNota;
         try {
             idNota = Integer.parseInt(idNotaStr);
@@ -363,11 +416,18 @@ public class Menu {
             return;
         }
 
-        // 3. Pedir nueva nota
+        boolean notaExiste = notasAlumno.stream().anyMatch(n -> n.getId() == idNota);
+        if (!notaExiste) {
+            JOptionPane.showMessageDialog(null, "No existe una nota con ese ID para este alumno.");
+            return;
+        }
+
+        // Pedir nueva nota
         String nuevaNotaStr = JOptionPane.showInputDialog(null, "Introduce la nueva nota (0-10):");
         if (nuevaNotaStr == null) {
             return;
         }
+
         int nuevaNota;
         try {
             nuevaNota = Integer.parseInt(nuevaNotaStr);
@@ -379,10 +439,9 @@ public class Menu {
             return;
         }
 
-        // 4. Crear objeto Nota con id, asignatura y alumnoId no modificados (asignatura se puede consultar si quieres)
-        // Aquí simplemente pasamos null para asignatura, ya que dao.actualizarNota solo necesita id y nota
-        Nota n = new Nota(idNota, null, nuevaNota, idAlumno);
-        int filas = dao.actualizarNota(n);
+        // Actualizar nota
+        Nota nActualizada = new Nota(idNota, null, nuevaNota, idAlumno);
+        int filas = dao.actualizarNota(nActualizada);
 
         JOptionPane.showMessageDialog(null, filas + " nota(s) actualizada(s) correctamente.");
     }
@@ -578,6 +637,23 @@ public class Menu {
     }
 
     // ==========================================================
+    // MÉTODO PARA OBTENER EL SIGUIENTE ID
+    // Con este metodo arreglamos la implementación del DAO Mock para que asigne IDs correctamente
+    private int getNextId(Connection conn, Tablas table, InstitutoDAO dao) throws SQLException {
+        if (conn == null) { // Modo MOCK
+            if (table == Tablas.ALUMNO) {
+                return dao.listarAlumnos().stream().mapToInt(Alumno::getId).max().orElse(0) + 1;
+            } else if (table == Tablas.NOTA) {
+                return dao.listarNotas().stream().mapToInt(Nota::getId).max().orElse(0) + 1;
+            } else {
+                throw new IllegalArgumentException("Tabla desconocida");
+            }
+        } else { // Base de datos real
+            return getMaxTableID(conn, table) + 1;
+        }
+    }
+
+    // ==========================================================
     // MÉTODOS AUXILIARES
     private int getMaxTableID(Connection conn, Tablas table) throws SQLException {
         String query = String.format("SELECT MAX(id) FROM %s", table.toString());
@@ -592,15 +668,24 @@ public class Menu {
         return id;
     }
 
-    private boolean existAlumno(Connection conn, int id) throws SQLException {
-        String query = "SELECT id FROM ALUMNO WHERE id = ?";
-        PreparedStatement ps = conn.prepareStatement(query);
-        ps.setInt(1, id);
-        ResultSet rs = ps.executeQuery();
-        boolean exist = rs.next();
-        rs.close();
-        ps.close();
-        return exist;
+    private boolean existAlumno(Connection conn, int id, InstitutoDAO dao) throws SQLException {
+        if (conn == null) {
+            return dao.listarAlumnos().stream().anyMatch(a -> a.getId() == id);
+        } else {
+            try {
+                String query = "SELECT id FROM ALUMNO WHERE id = ?";
+                PreparedStatement ps = conn.prepareStatement(query);
+                ps.setInt(1, id);
+                ResultSet rs = ps.executeQuery();
+                boolean exist = rs.next();
+                rs.close();
+                ps.close();
+                return exist;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
     }
 
     private boolean notaValida(int nota) {
@@ -617,19 +702,6 @@ public class Menu {
         }
         return input;
     }
-
-    // private Integer pedirEntero(String mensaje) {
-    //     String input = pedirTexto(mensaje);
-    //     if (input == null) {
-    //         return null;
-    //     }
-    //     try {
-    //         return Integer.parseInt(input);
-    //     } catch (NumberFormatException e) {
-    //         JOptionPane.showMessageDialog(null, "Número inválido.");
-    //         return null;
-    //     }
-    // }
 
     // ==========================================================
     private enum TipoMenu {

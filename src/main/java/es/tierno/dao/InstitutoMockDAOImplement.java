@@ -2,6 +2,7 @@ package es.tierno.dao;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import es.tierno.modelo.Alumno;
 import es.tierno.modelo.Nota;
@@ -12,9 +13,14 @@ public class InstitutoMockDAOImplement implements InstitutoDAO {
     private List<Nota> notas = new ArrayList<>();
 
     @Override
-    public void crearTablaAlumno() {}
+    public void crearTablaAlumno() {
+        alumnos.clear();
+    }
+
     @Override
-    public void crearTablaNotas() {}
+    public void crearTablaNotas() {
+        notas.clear();
+    }
 
     @Override
     public int insertarAlumno(Alumno a) {
@@ -30,42 +36,69 @@ public class InstitutoMockDAOImplement implements InstitutoDAO {
 
     @Override
     public int actualizarAlumno(Alumno a) {
-        return 1;
+        for (int i = 0; i < alumnos.size(); i++) {
+            if (alumnos.get(i).getId() == a.getId()) {
+                alumnos.set(i, a);
+                return 1;
+            }
+        }
+        return 0;
     }
 
     @Override
     public int actualizarNota(Nota n) {
-        return 1;
+        for (int i = 0; i < notas.size(); i++) {
+            if (notas.get(i).getId() == n.getId()) {
+                // Solo actualizamos la nota, no la asignatura ni el alumnoId
+                Nota notaExistente = notas.get(i);
+                notas.set(i, new Nota(n.getId(), notaExistente.getAsignatura(), n.getNota(), notaExistente.getAlumnoId()));
+                return 1;
+            }
+        }
+        return 0;
     }
 
     @Override
     public List<Alumno> listarAlumnos() {
-        return alumnos;
+        return new ArrayList<>(alumnos);
     }
 
-        public List<Nota> listarNotas() {
-        return notas;
+    public List<Nota> listarNotas() {
+        return new ArrayList<>(notas);
     }
 
     @Override
     public List<String> listarAlumnosConNotas() {
         List<String> out = new ArrayList<>();
+        for (Alumno a : alumnos) {
+            List<Nota> notasAlumno = notas.stream()
+                                          .filter(n -> n.getAlumnoId() == a.getId())
+                                          .toList();
+            for (Nota n : notasAlumno) {
+                out.add(a.getNombre() + " " + a.getApellido() + " | " + n.getAsignatura() + " = " + n.getNota());
+            }
+        }
         return out;
     }
 
     @Override
     public int borrarAlumno(Alumno a) {
-        return 1;
+        boolean removed = alumnos.removeIf(al -> al.getId() == a.getId());
+        // También borramos sus notas
+        notas.removeIf(n -> n.getAlumnoId() == a.getId());
+        return removed ? 1 : 0;
     }
 
     @Override
     public int borrarNota(Nota n) {
-        return 1;
+        boolean removed = notas.removeIf(nota -> nota.getId() == n.getId());
+        return removed ? 1 : 0;
     }
 
     @Override
     public List<Alumno> consultarAlumno(int edad) {
-        List<Alumno> out = new ArrayList<>();
-        return out;
+        return alumnos.stream()
+                      .filter(a -> a.getEdad() <= edad)
+                      .collect(Collectors.toList());
     }
 }
